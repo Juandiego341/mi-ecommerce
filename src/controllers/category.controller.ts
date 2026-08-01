@@ -1,34 +1,37 @@
-const prisma = require('../prisma')
+import prisma  from '../prisma'
+import { Request, Response } from 'express'
 
-const getAll = async (req, res) => {
+
+const getAll = async (req:Request , res: Response):Promise<void>  => {
     try {
         const category = await prisma.productCategory.findMany()
         res.json(category)
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ message: "Error en el servidor", error: error.message })
     }
 }
 
-const getOne = async (req, res) => {
+const getOne = async (req:Request , res: Response):Promise<void>  => {
     try {
         const { id } = req.params
 
         const category = await prisma.productCategory.findUnique({
-            where: { id: parseInt(id) }
+            where: { id: parseInt(id as string) }
         })
 
         if (!category) {
-            return res.status(404).json({ message: "Categoria no encontrada" })
+            res.status(404).json({ message: "Categoria no encontrada" })
+            return
         }
 
         res.json(category);
     }
-    catch (error) {
+    catch (error: any) {
         res.status(500).json({ message: "Error en el servidor", error: error.message })
     }
 }
 
-const create = async (req, res) => {
+const create = async (req:Request , res: Response):Promise<void>  => {
     try {
         const { name, desc } = req.body
 
@@ -37,40 +40,40 @@ const create = async (req, res) => {
         })
 
         res.status(201).json(category)
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 }
 
-const update = async (req, res) => {
+const update = async (req:Request , res: Response):Promise<void>  => {
     try {
         const { id } = req.params
         const { name, desc } = req.body
 
         const category = await prisma.productCategory.update({
-            where: { id: parseInt(id) },
+            where: { id: parseInt(id as string) },
             data: { name, desc }
         })
         res.json(category)
     }
-    catch (error) {
+    catch (error: any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 }
 
-const remove = async (req, res) => {
+const remove = async (req:Request , res: Response):Promise<void>  => {
     try {
         const { id } = req.params
 
         await prisma.productCategory.delete({
             where: {
-                id: parseInt(id)
+                id: parseInt(id as string)
             }
         })
         res.json({ message: 'Categoria eliminada correctamente' })
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 
 }
-module.exports = { getAll, getOne, create, update, remove }
+export { getAll, getOne, create, update, remove }

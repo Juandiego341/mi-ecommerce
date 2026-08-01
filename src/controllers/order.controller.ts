@@ -1,8 +1,16 @@
-const prisma = require('../prisma')
+import prisma from '../prisma'
+import { Request, Response } from 'express'
 
-const createOrder = async (req, res) => {
+interface AuthRequest extends Request{
+    user?:{
+        id:number
+        email: string
+        rol: string
+    }
+}
+const createOrder = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const userId = req.user.id
+        const userId = req.user!.id
         const { provider, amount } = req.body
 
         const session = await prisma.shoppingSession.findFirst({
@@ -16,7 +24,8 @@ const createOrder = async (req, res) => {
             }
         })
         if (!session || session.cartItems.length === 0) {
-            return res.status(400).json({ message: 'El carrito esta vacio' })
+             res.status(400).json({ message: 'El carrito esta vacio' })
+             return
         }
 
         const total = session.cartItems.reduce((acc, item) => {
@@ -84,14 +93,14 @@ const createOrder = async (req, res) => {
         })
         res.status(201).json(orderComplete)
     }
-    catch (error) {
+    catch (error : any) {
         res.status(500).json({ message: 'Error al crear la orden', error: error.message })
     }
 }
 
-const getOrders = async (req, res) => {
+const getOrders = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const userId = req.user.id
+        const userId = req.user!.id
 
         const orders = await prisma.orderDetails.findMany({
             where: { userId },
@@ -106,17 +115,17 @@ const getOrders = async (req, res) => {
         })
         res.json(orders)
     }
-    catch (error) {
+    catch (error : any) {
         res.status(500).json({ message: 'Error al obtener las ordenes', error: error.message })
     }
 }
 
-const getOneOrder = async (req, res) => {
+const getOneOrder = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params
 
         const order = await prisma.orderDetails.findUnique({
-            where: { id: parseInt(id) },
+            where: { id: parseInt(id as string) },
             include: {
                 items: {
                     include: {
@@ -128,12 +137,13 @@ const getOneOrder = async (req, res) => {
         })
         if (!order) {
             res.status(404).json({ message: 'Orden no encontrada' })
+            return
         }
 
         res.json(order)
     }
-    catch (error) {
+    catch (error : any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 }
-module.exports = { createOrder, getOrders, getOneOrder }
+export  { createOrder, getOrders, getOneOrder }

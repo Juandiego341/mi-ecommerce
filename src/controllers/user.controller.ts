@@ -1,9 +1,17 @@
-const prisma = require('../prisma')
+import prisma  from '../prisma'
+import { Request, Response } from 'express'
 
-const getProfile = async (req, res) => {
+interface AuthRequest extends Request{
+    user?:{
+        id:number
+        email: string
+        rol: string
+    }
+}
+const getProfile = async (req:AuthRequest , res: Response):Promise<void> => {
     try {
         console.log('req.user:', req.user)
-        const userId = req.user.id
+        const userId = req.user!.id
         console.log('userId:', userId)
 
         const user = await prisma.user.findUnique({
@@ -18,15 +26,15 @@ const getProfile = async (req, res) => {
         })
         res.status(200).json({ message: "usuario obtenido exitosamente", user })
 
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ message: 'Error en el servidor ', error: error.message })
     }
 
 }
 
-const updateProfile = async (req, res) => {
+const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const userId = req.user.id
+        const userId = req.user!.id
 
         const { username, firstName, lastName, email } = req.body
 
@@ -42,15 +50,15 @@ const updateProfile = async (req, res) => {
         })
 
         res.status(200).json({ message: "el usuario fue acutalizado con exito", user })
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 
 }
 
-const getAddresses = async (req, res) => {
+const getAddresses = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const userId = req.user.id
+        const userId = req.user!.id
 
         const address = await prisma.userAddress.findMany({
             where: { userId }
@@ -58,14 +66,14 @@ const getAddresses = async (req, res) => {
 
         res.status(200).json({ message: 'Direcciones obtenidas exitosamente', address })
     }
-    catch (error) {
+    catch (error: any) {
         res.status(500).json({ message: 'Error en el servidor ', error: error.message })
     }
 }
 
-const addAddress = async (req, res) => {
+const addAddress = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const userId = req.user.id
+        const userId = req.user!.id
         const { addressLine1, addressLine2, city, postalCode, country, telephone, mobile } = req.body
 
         const address = await prisma.userAddress.create({
@@ -83,20 +91,20 @@ const addAddress = async (req, res) => {
         })
         res.status(201).json({ message: "La direccion fue creada con exito", address })
 
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({
             message: "Error en el servidor", error: error.message
         })
     }
 }
 
-const updateAddress = async (req, res) => {
+const updateAddress = async (req:Request, res:Response):Promise<void> => {
     try {
         const { id } = req.params
         const { addressLine1, addressLine2, city, postalCode, country, telephone, mobile } = req.body
 
         const address = await prisma.userAddress.update({
-            where: { id: parseInt(id) },
+            where: { id: parseInt(id as string) },
             data: {
                 addressLine1,
                 addressLine2,
@@ -108,23 +116,23 @@ const updateAddress = async (req, res) => {
             }
         })
         res.status(200).json({ message: "Direccion cambiada con exito", address })
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({
             message: "Error en el servidor", error: error.message
         })
     }
 }
 
-const deleteAddress = async (req, res) => {
+const deleteAddress = async (req:Request, res:Response):Promise<void> => {
     try {
         const { id } = req.params
         await prisma.userAddress.delete({
-            where: { id: parseInt(id) }
+            where: { id: parseInt(id as string) }
         })
 
         res.json({ message: "La direccion fue eliminada correctamente" })
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 }
-module.exports = { getProfile, updateProfile, getAddresses, addAddress, updateAddress, deleteAddress }
+export { getProfile, updateProfile, getAddresses, addAddress, updateAddress, deleteAddress }

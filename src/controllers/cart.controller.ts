@@ -1,9 +1,18 @@
-const prisma = require('../prisma')
+import prisma  from '../prisma'
+import { Request, Response } from 'express'
+
+interface AuthRequest extends Request{
+    user?:{
+        id:number
+        email: string
+        rol: string
+    }
+}
 
 
-const getCart = async (req, res) => {
+const getCart = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const userId = req.user.id
+        const userId = req.user!.id
 
         const session = await prisma.shoppingSession.findFirst({
             where: { userId },
@@ -17,18 +26,19 @@ const getCart = async (req, res) => {
         })
 
         if (!session) {
-            return res.json({ items: [], total: 0 })
+             res.json({ items: [], total: 0 })
+             return
 
         }
         res.json(session)
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 }
 
-const addItem = async (req, res) => {
+const addItem = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const userId = req.user.id
+        const userId = req.user!.id
         const { productId, quantity } = req.body
 
         let session = await prisma.shoppingSession.findFirst({
@@ -51,7 +61,8 @@ const addItem = async (req, res) => {
                 where: { id: itemExist.id },
                 data: { quantity: itemExist.quantity + quantity }
             })
-            return res.json(updateItem)
+             res.json(updateItem)
+             return
         }
 
         const newItem = await prisma.cartItem.create({
@@ -62,60 +73,61 @@ const addItem = async (req, res) => {
             }
         })
         res.status(201).json(newItem)
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 }
 
-const updateItem = async (req, res) => {
+const updateItem = async (req:Request, res:Response):Promise<void> => {
     try {
         const { id } = req.params
         const { quantity } = req.body
 
         const item = await prisma.cartItem.update({
-            where: { id: parseInt(id) },
+            where: { id: parseInt(id as string) },
             data: { quantity: parseInt(quantity) }
         })
 
         res.json(item)
     }
-    catch (error) {
+    catch (error: any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 }
 
-const removeItem = async (req, res) => {
+const removeItem = async (req:Request, res:Response):Promise<void> => {
     try {
         const { id } = req.params
 
         await prisma.cartItem.delete({
-            where: { id: parseInt(id) }
+            where: { id: parseInt(id as string) }
         })
         res.json({ message: 'Item eliminado del carrito' })
     }
-    catch (error) {
+    catch (error: any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 }
 
-const clearCart = async (req, res) => {
+const clearCart = async (req:AuthRequest, res:Response):Promise<void> => {
     try {
-        const userId = req.user.id
+        const userId = req.user!.id
 
         const session = await prisma.shoppingSession.findFirst({
             where: { userId }
         })
         if (!session) {
-            return res.status(404).json({ message: 'Carrito no encontrado' })
+             res.status(404).json({ message: 'Carrito no encontrado' })
+             return
         }
         await prisma.cartItem.deleteMany({
             where: { sessionId: session.id }
         })
         res.json({ message: 'Carrito vaciado correctamente' })
     }
-    catch (error) {
+    catch (error: any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 }
 
-module.exports = { getCart, addItem, updateItem, removeItem, clearCart }
+export { getCart, addItem, updateItem, removeItem, clearCart }

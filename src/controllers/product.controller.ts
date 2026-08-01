@@ -1,6 +1,7 @@
-const prisma = require('../prisma')
+import prisma  from '../prisma'
+import { Request, Response } from 'express'
 
-const getAll = async (req, res) => {
+const getAll = async (req:Request , res: Response):Promise<void>  => {
     try {
         const products = await prisma.product.findMany({
             include: {
@@ -10,17 +11,17 @@ const getAll = async (req, res) => {
             }
         })
         res.json(products)
-    } catch (error) {
+    } catch (error:any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 }
 
-const getOne = async (req, res) => {
+const getOne = async (req:Request , res: Response):Promise<void>  => {
     try {
         const { id } = req.params
 
         const product = await prisma.product.findUnique({
-            where: { id: parseInt(id) },
+            where: { id: parseInt(id as string) },
             include: {
                 category: true,
                 inventory: true,
@@ -29,16 +30,18 @@ const getOne = async (req, res) => {
         })
 
         if (!product) {
-            return res.status(404).json({ message: 'Producto no encontrado' })
-        }
+                res.status(404).json({ message: 'Producto no encontrado' })
+                return
+            }
+
 
         res.json(product)
-    } catch (error) {
+    } catch (error:any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 }
 
-const create = async (req, res) => {
+const create = async (req:Request , res: Response):Promise<void>  => {
     try {
         const { name, desc, SKU, price, categoryId, quantity } = req.body
 
@@ -60,43 +63,44 @@ const create = async (req, res) => {
         })
 
         res.status(201).json(product)
-    } catch (error) {
+    } catch (error:any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 }
 
-const update = async (req, res) => {
+const update = async (req:Request , res: Response):Promise<void>  => {
     try {
         const { id } = req.params
         const { name, desc, SKU, price, categoryId } = req.body
 
         const product = await prisma.product.update({
-            where: { id: parseInt(id) },
+            where: { id: parseInt(id as string) },
             data: { name, desc, SKU, price, categoryId: parseInt(categoryId) }
         })
 
         res.json(product)
-    } catch (error) {
+    } catch (error:any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 }
 
-const remove = async (req, res) => {
+const remove = async (req:Request , res: Response):Promise<void>  => {
     try {
         const { id } = req.params
 
         // Primero obtener el producto para saber el inventoryId
         const product = await prisma.product.findUnique({
-            where: { id: parseInt(id) }
+            where: { id: parseInt(id as string) }
         })
 
         if (!product) {
-            return res.status(404).json({ message: 'Producto no encontrado' })
+             res.status(404).json({ message: 'Producto no encontrado' })
+             return
         }
 
         // Eliminar el producto
         await prisma.product.delete({
-            where: { id: parseInt(id) }
+            where: { id: parseInt(id as string) }
         })
 
         // Luego eliminar el inventario asociado
@@ -105,9 +109,9 @@ const remove = async (req, res) => {
         })
 
         res.json({ message: 'Producto eliminado correctamente' })
-    } catch (error) {
+    } catch (error:any) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message })
     }
 }
 
-module.exports = { getAll, getOne, create, update, remove }
+export { getAll, getOne, create, update, remove }
