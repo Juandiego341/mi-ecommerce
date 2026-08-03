@@ -8,7 +8,6 @@
     "start": "node dist/src/index.js",
     "dev": "ts-node src/index.ts",
     "build": "tsc"
-    
   },
   "keywords": [],
   "author": "",
@@ -29,6 +28,8 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.9.5",
