@@ -32,7 +32,7 @@ const register = async (req:Request , res: Response):Promise<void> => {
                 email,
                 password: passwordEncrypted,
                 firstName,
-                lastName
+                lastName,
             }
         });
         
@@ -83,7 +83,7 @@ const login = async (req:Request , res: Response):Promise<void>  => {
         const usuario = await prisma.user.findUnique({
             where: { email }
         })
-
+        
         if (!usuario) {
             res.status(401).json({ 
                 code: 'INVALID_CREDENTIALS',

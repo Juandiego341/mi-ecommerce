@@ -3,6 +3,8 @@ import cors from 'cors'
 import path from 'path'
 import dotenv from 'dotenv'
 import { Request, Response } from 'express'
+import { errorHandler } from './middlewares/error.middleware'
+import { generalLimiter, authLimiter } from './middlewares/rateLimit.middleware'
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') })
 
@@ -15,10 +17,12 @@ import userRoutes from'./routes/user.routes'
 
 const app = express()
 
+
 app.use(cors())
 app.use(express.json())
 
-app.use('/auth', authRoutes)
+app.use(generalLimiter)
+app.use('/auth',authLimiter,authRoutes)
 app.use('/category', categoryRoutes)
 app.use('/product', productRoutes)
 app.use('/cart', cartRoutes)
@@ -29,6 +33,8 @@ const PORT = process.env.PORT || 3000
 app.get('/', (req:Request, res:Response) => {
     res.json({ message: '🚀 API ecommerce funcionando' })
 })
+
+app.use(errorHandler);
 
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`)

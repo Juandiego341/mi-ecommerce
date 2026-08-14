@@ -5,11 +5,7 @@ import { cartService } from '../services/cart.service'
 const Cart = () => {
   const [cart, setCart] = useState(null)
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchCart()
-  }, [])
-
+  
   const fetchCart = async () => {
     try {
       const response = await cartService.getCart()
@@ -20,6 +16,12 @@ const Cart = () => {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchCart()
+  }, [])
+
 
   const handleUpdateQuantity = async (itemId, quantity) => {
     if (quantity < 1) return
