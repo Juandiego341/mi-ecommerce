@@ -11,6 +11,7 @@ const Admin = () => {
   const [editingProduct, setEditingProduct] = useState(null)
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [newCategory, setNewCategory] = useState({ name: '', desc: '' })
+  const [imagen, setImagen] = useState(null)
   const [formData, setFormData] = useState({
     name: '',
     desc: '',
@@ -19,10 +20,6 @@ const Admin = () => {
     categoryId: '',
     quantity: ''
   })
-
-  useEffect(() => {
-    fetchData()
-  }, [])
 
   const fetchData = async () => {
     try {
@@ -39,6 +36,10 @@ const Admin = () => {
     }
   }
 
+  useEffect(() => {
+    fetchData()
+  }, [])
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
@@ -46,19 +47,31 @@ const Admin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const dataToSend = {
-        ...formData,
-        price: parseFloat(formData.price),
-        categoryId: parseInt(formData.categoryId),
-        quantity: parseInt(formData.quantity)
+      const formDataToSend = new FormData()
+      formDataToSend.append('name', formData.name)
+      formDataToSend.append('desc', formData.desc)
+      formDataToSend.append('SKU', formData.SKU)
+      formDataToSend.append('price', formData.price)
+      formDataToSend.append('categoryId', formData.categoryId)
+      formDataToSend.append('quantity', formData.quantity)
+      if (imagen) {
+        formDataToSend.append('imagen', imagen)
       }
+
+      // Log para verificar
+      for (let [key, value] of formDataToSend.entries()) {
+        console.log(key, value)
+      }
+
       if (editingProduct) {
-        await productService.update(editingProduct.id, dataToSend)
+        await productService.update(editingProduct.id, formDataToSend)
       } else {
-        await productService.create(dataToSend)
+        await productService.create(formDataToSend)
       }
+
       setShowForm(false)
       setEditingProduct(null)
+      setImagen(null)
       setFormData({ name: '', desc: '', SKU: '', price: '', categoryId: '', quantity: '' })
       fetchData()
     } catch (err) {
@@ -92,6 +105,7 @@ const Admin = () => {
   const handleCancel = () => {
     setShowForm(false)
     setEditingProduct(null)
+    setImagen(null)
     setFormData({ name: '', desc: '', SKU: '', price: '', categoryId: '', quantity: '' })
   }
 
@@ -205,6 +219,19 @@ const Admin = () => {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1.5">Imagen</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setImagen(e.target.files[0])}
+                  className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition"
+                />
+                {imagen && (
+                  <p className="text-zinc-400 text-xs mt-1">{imagen.name}</p>
+                )}
+              </div>
+
               {/* Categoría con botón de crear */}
               <div>
                 <label className="block text-sm text-zinc-400 mb-1.5">Categoría</label>
@@ -230,7 +257,6 @@ const Admin = () => {
                   </button>
                 </div>
 
-                {/* Formulario nueva categoría */}
                 {showCategoryForm && (
                   <div className="mt-3 p-4 bg-zinc-800 rounded-lg space-y-3">
                     <p className="text-zinc-300 text-sm font-medium">Nueva categoría</p>
@@ -256,7 +282,6 @@ const Admin = () => {
                       Crear categoría
                     </button>
 
-                    {/* Lista de categorías existentes */}
                     <div className="border-t border-zinc-700 pt-3 space-y-2">
                       <p className="text-zinc-400 text-xs font-medium">Categorías existentes</p>
                       {categories.map(cat => (

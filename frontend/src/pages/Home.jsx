@@ -23,7 +23,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950">
-  
+
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-4 py-20 text-center">
@@ -54,9 +54,17 @@ const Home = () => {
                 key={product.id}
                 className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 hover:border-indigo-500 transition"
               >
-                <div className="bg-zinc-800 rounded-xl h-40 mb-4 flex items-center justify-center">
-                  <span className="text-zinc-500 text-sm">Sin imagen</span>
-                </div>
+                {product.imagen ? (
+                  <img
+                    src={product.imagen}
+                    alt={product.name}
+                    className="w-full h-44 object-cover rounded-xl mb-4"
+                  />
+                ) : (
+                  <div className="bg-zinc-800 rounded-xl h-44 mb-4 flex items-center justify-center">
+                    <span className="text-zinc-500 text-sm">Sin imagen</span>
+                  </div>
+                )}
                 <h3 className="text-white font-medium mb-1">{product.name}</h3>
                 <p className="text-zinc-400 text-sm mb-3 line-clamp-2">{product.desc}</p>
                 <div className="flex items-center justify-between">

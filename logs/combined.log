@@ -2,3 +2,5 @@
 {"level":"info","message":"Usuario registrado exitosamente: 2","service":"ecommerce-api","timestamp":"2026-06-28 22:08:05"}
 {"level":"info","message":"Intento de registro para email: betancurd913@gmail.com","service":"ecommerce-api","timestamp":"2026-06-28 22:09:50"}
 {"level":"info","message":"Usuario registrado exitosamente: 3","service":"ecommerce-api","timestamp":"2026-06-28 22:09:50"}
+{"level":"info","message":"Intento de registro para email: testuser123@test.com","service":"ecommerce-api","timestamp":"2026-08-17 21:56:33"}
+{"level":"info","message":"Usuario registrado exitosamente: 4","service":"ecommerce-api","timestamp":"2026-08-17 21:56:34"}

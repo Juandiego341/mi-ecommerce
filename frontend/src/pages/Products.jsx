@@ -175,9 +175,17 @@ const Products = () => {
                 onClick={() => navigate(`/products/${product.id}`)}
                 className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 hover:border-indigo-500 transition flex flex-col cursor-pointer"
               >
-                <div className="bg-zinc-800 rounded-xl h-44 mb-4 flex items-center justify-center">
-                  <span className="text-zinc-500 text-sm">Sin imagen</span>
-                </div>
+                {product.imagen ? (
+                  <img
+                    src={product.imagen}
+                    alt={product.name}
+                    className="w-full h-44 object-cover rounded-xl mb-4"
+                  />
+                ) : (
+                  <div className="bg-zinc-800 rounded-xl h-44 mb-4 flex items-center justify-center">
+                    <span className="text-zinc-500 text-sm">Sin imagen</span>
+                  </div>
+                )}
 
                 <div className="flex-1">
                   <span className="text-xs text-indigo-400 font-medium">
@@ -200,8 +208,8 @@ const Products = () => {
                     {success === product.id
                       ? '✓ Agregado'
                       : addingId === product.id
-                      ? 'Agregando...'
-                      : 'Agregar'}
+                        ? 'Agregando...'
+                        : 'Agregar'}
                   </button>
                 </div>
               </div>

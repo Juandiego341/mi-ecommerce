@@ -92,6 +92,7 @@ model Product {
   categoryId  Int
   inventoryId Int      @unique
   price       Float
+  imagen      String?
   discountId  Int?
   createdAt   DateTime @default(now())
   modifiedAt  DateTime @updatedAt

@@ -22,7 +22,7 @@ const ProductDetail = () => {
         const response = await productService.getOne(id)
         setProduct(response.data)
       } catch (err) {
-        setError('Producto no encontrado',err)
+        setError('Producto no encontrado', err)
       } finally {
         setLoading(false)
       }
@@ -41,7 +41,7 @@ const ProductDetail = () => {
       setSuccess(true)
       setTimeout(() => setSuccess(false), 2000)
     } catch (err) {
-      setError('Error al agregar al carrito',err)
+      setError('Error al agregar al carrito', err)
     } finally {
       setAdding(false)
     }
@@ -78,9 +78,17 @@ const ProductDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
 
           {/* Imagen */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl h-96 flex items-center justify-center">
-            <span className="text-zinc-500">Sin imagen</span>
-          </div>
+          {product.imagen ? (
+            <img
+              src={product.imagen}
+              alt={product.name}
+              className="w-l object-cover block mx-auto rounded-xl mb-4"
+            />
+          ) : (
+            <div className="bg-zinc-800 rounded-xl h-46 mb-4 flex items-center justify-center">
+              <span className="text-zinc-500 text-sm">Sin imagen</span>
+            </div>
+          )}
 
           {/* Info */}
           <div className="flex flex-col justify-center">
