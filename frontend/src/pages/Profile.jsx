@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import { userService } from '../services/user.service'
+import { getErrorMessage } from '../utils/getErrorMessage'
+import ErrorBanner from '../components/ErrorBanner'
+import { ListRowSkeleton } from '../components/Skeleton'
 
 const Profile = () => {
   const [profile, setProfile] = useState(null)
@@ -8,6 +11,7 @@ const Profile = () => {
   const [editing, setEditing] = useState(false)
   const [addingAddress, setAddingAddress] = useState(false)
   const [success, setSuccess] = useState(null)
+  const [error, setError] = useState(null)
 
   const [formData, setFormData] = useState({
     username: '',
@@ -26,10 +30,6 @@ const Profile = () => {
     mobile: ''
   })
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
   const fetchData = async () => {
     try {
       const [profileRes, addressRes] = await Promise.all([
@@ -40,14 +40,20 @@ const Profile = () => {
       setFormData(profileRes.data.user)
       setAddresses(addressRes.data.address)
     } catch (err) {
-      console.error(err)
+      setError(getErrorMessage(err, 'No se pudo cargar el perfil'))
     } finally {
       setLoading(false)
     }
   }
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData()
+  }, [])
+
   const handleUpdateProfile = async (e) => {
     e.preventDefault()
+    setError(null)
     try {
       await userService.updateProfile(formData)
       setSuccess('Perfil actualizado correctamente')
@@ -55,12 +61,13 @@ const Profile = () => {
       fetchData()
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
-      console.error(err)
+      setError(getErrorMessage(err, 'No se pudo actualizar el perfil'))
     }
   }
 
   const handleAddAddress = async (e) => {
     e.preventDefault()
+    setError(null)
     try {
       await userService.addAddress(addressForm)
       setSuccess('Dirección agregada correctamente')
@@ -72,22 +79,27 @@ const Profile = () => {
       fetchData()
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
-      console.error(err)
+      setError(getErrorMessage(err, 'No se pudo agregar la dirección'))
     }
   }
 
   const handleDeleteAddress = async (id) => {
+    setError(null)
     try {
       await userService.deleteAddress(id)
       fetchData()
     } catch (err) {
-      console.error(err)
+      setError(getErrorMessage(err, 'No se pudo eliminar la dirección'))
     }
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-      <p className="text-zinc-400">Cargando perfil...</p>
+    <div className="min-h-screen bg-zinc-950">
+      <div className="max-w-4xl mx-auto px-4 py-10 space-y-4">
+        <h1 className="text-3xl font-bold text-white">Mi Perfil</h1>
+        <ListRowSkeleton />
+        <ListRowSkeleton />
+      </div>
     </div>
   )
 
@@ -96,6 +108,8 @@ const Profile = () => {
       <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
 
         <h1 className="text-3xl font-bold text-white">Mi Perfil</h1>
+
+        <ErrorBanner message={error} />
 
         {success && (
           <div className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm rounded-lg px-4 py-3">

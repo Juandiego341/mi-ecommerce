@@ -23,9 +23,18 @@ const verifyToken = (req: AuthRequest, res:Response, next:NextFunction): void =>
         req.user = user
         next()
     } catch (error: any) {
-         res.status(404).json({ message: ' Token invalido o expirado ' })
+         res.status(401).json({ message: 'Token invalido o expirado' })
          return
 
     }
 }
-export { verifyToken }
+
+const requireAdmin = (req: AuthRequest, res:Response, next:NextFunction): void => {
+    if (req.user?.rol !== 'ADMIN') {
+        res.status(403).json({ message: 'Acceso denegado, se requiere rol de administrador' })
+        return
+    }
+    next()
+}
+
+export { verifyToken, requireAdmin }

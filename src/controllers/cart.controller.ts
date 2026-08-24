@@ -26,7 +26,7 @@ const getCart = async (req: AuthRequest, res: Response): Promise<void> => {
         })
 
         if (!session) {
-             res.json({ items: [], total: 0 })
+             res.json({ cartItems: [], total: 0 })
              return
 
         }

@@ -3,18 +3,24 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { productService } from '../services/product.service'
 import { cartService } from '../services/cart.service'
 import { useAuth } from '../context/useAuth'
+import { useCart } from '../context/useCart'
+import { getErrorMessage } from '../utils/getErrorMessage'
+import ErrorBanner from '../components/ErrorBanner'
+import { Skeleton } from '../components/Skeleton'
 
 const ProductDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { refreshCart } = useCart()
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
   const [adding, setAdding] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [error, setError] = useState(null)
+  const [loadError, setLoadError] = useState(null)
+  const [cartError, setCartError] = useState(null)
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -22,7 +28,7 @@ const ProductDetail = () => {
         const response = await productService.getOne(id)
         setProduct(response.data)
       } catch (err) {
-        setError('Producto no encontrado', err)
+        setLoadError(getErrorMessage(err, 'Producto no encontrado'))
       } finally {
         setLoading(false)
       }
@@ -37,25 +43,37 @@ const ProductDetail = () => {
     }
     try {
       setAdding(true)
+      setCartError(null)
       await cartService.addItem({ productId: product.id, quantity })
       setSuccess(true)
+      refreshCart()
       setTimeout(() => setSuccess(false), 2000)
     } catch (err) {
-      setError('Error al agregar al carrito', err)
+      setCartError(getErrorMessage(err, 'Error al agregar al carrito'))
     } finally {
       setAdding(false)
     }
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-      <p className="text-zinc-400">Cargando producto...</p>
+    <div className="min-h-screen bg-zinc-950">
+      <div className="max-w-6xl mx-auto px-4 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <Skeleton className="w-full h-96" />
+          <div className="space-y-4">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-10 w-2/3" />
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-20 w-full" />
+          </div>
+        </div>
+      </div>
     </div>
   )
 
-  if (error) return (
+  if (loadError) return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-      <p className="text-red-400">{error}</p>
+      <p className="text-red-400">{loadError}</p>
     </div>
   )
 
@@ -142,6 +160,8 @@ const ProductDetail = () => {
                 </button>
               </div>
             </div>
+
+            {cartError && <div className="mb-4"><ErrorBanner message={cartError} /></div>}
 
             {/* Botones */}
             <div className="flex gap-4">

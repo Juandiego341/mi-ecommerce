@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './context/useAuth'
 
 import Navbar from './components/Navbar'
@@ -11,10 +11,16 @@ import Orders from './pages/Orders'
 import Profile from './pages/Profile'
 import ProductDetail from './pages/ProductDetail'
 import Admin from './pages/Admin'
+import NotFound from './pages/NotFound'
 
 const PrivateRoute = ({ children }) => {
   const { token } = useAuth()
-  return token ? children : <Navigate to="/login" />
+  const location = useLocation()
+  if (!token) {
+    const redirect = encodeURIComponent(location.pathname + location.search)
+    return <Navigate to={`/login?redirect=${redirect}`} />
+  }
+  return children
 }
 
 const AdminRoute = ({ children }) => {
@@ -36,6 +42,7 @@ const App = () => {
         <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
         <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
         <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   )

@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { productService } from '../services/product.service'
+import { getErrorMessage } from '../utils/getErrorMessage'
+import ErrorBanner from '../components/ErrorBanner'
+import { ProductGridSkeleton } from '../components/Skeleton'
 
 
 const Home = () => {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -13,7 +17,7 @@ const Home = () => {
         const response = await productService.getAll()
         setProducts(response.data.slice(0, 4)) // solo 4 productos destacados
       } catch (err) {
-        console.error(err)
+        setError(getErrorMessage(err, 'No se pudieron cargar los productos destacados'))
       } finally {
         setLoading(false)
       }
@@ -45,8 +49,10 @@ const Home = () => {
       <section className="max-w-6xl mx-auto px-4 pb-20">
         <h2 className="text-2xl font-bold text-white mb-8">Productos destacados</h2>
 
+        {error && <div className="mb-6"><ErrorBanner message={error} /></div>}
+
         {loading ? (
-          <div className="text-zinc-400 text-center py-10">Cargando...</div>
+          <ProductGridSkeleton />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {products.map(product => (

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { authService } from '../services/auth.service'
+import { getErrorMessage } from '../utils/getErrorMessage'
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -27,7 +28,7 @@ const Register = () => {
       await authService.register(formData)
       navigate('/login')
     } catch (err) {
-      setError('Error al registrarse, intenta de nuevo',err)
+      setError(getErrorMessage(err, 'Error al registrarse, intenta de nuevo'))
     } finally {
       setLoading(false)
     }

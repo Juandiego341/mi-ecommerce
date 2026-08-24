@@ -1,0 +1,5 @@
+-- CreateEnum
+CREATE TYPE "OrderStatus" AS ENUM ('PENDIENTE', 'PAGADO', 'PREPARANDO', 'ENVIADO', 'ENTREGADO', 'CANCELADO');
+
+-- AlterTable
+ALTER TABLE "OrderDetails" ADD COLUMN     "status" "OrderStatus" NOT NULL DEFAULT 'PENDIENTE';

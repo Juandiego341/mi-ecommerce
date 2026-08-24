@@ -1,8 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
+import { useCart } from '../context/useCart'
 
 const Navbar = () => {
   const { user, logout } = useAuth()
+  const { itemCount } = useCart()
   const navigate = useNavigate()
 
   const handleLogout = () => {
@@ -29,8 +31,13 @@ const Navbar = () => {
           </Link>
           {user && (
             <>
-              <Link to="/cart" className="text-zinc-400 hover:text-white text-sm transition">
+              <Link to="/cart" className="relative text-zinc-400 hover:text-white text-sm transition">
                 Carrito
+                {itemCount > 0 && (
+                  <span className="absolute -top-2 -right-4 bg-indigo-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                    {itemCount > 9 ? '9+' : itemCount}
+                  </span>
+                )}
               </Link>
               <Link to="/orders" className="text-zinc-400 hover:text-white text-sm transition">
                 Mis órdenes

@@ -98,13 +98,14 @@ const addAddress = async (req: AuthRequest, res: Response): Promise<void> => {
     }
 }
 
-const updateAddress = async (req:Request, res:Response):Promise<void> => {
+const updateAddress = async (req:AuthRequest, res:Response):Promise<void> => {
     try {
+        const userId = req.user!.id
         const { id } = req.params
         const { addressLine1, addressLine2, city, postalCode, country, telephone, mobile } = req.body
 
-        const address = await prisma.userAddress.update({
-            where: { id: parseInt(id as string) },
+        const result = await prisma.userAddress.updateMany({
+            where: { id: parseInt(id as string), userId },
             data: {
                 addressLine1,
                 addressLine2,
@@ -115,6 +116,13 @@ const updateAddress = async (req:Request, res:Response):Promise<void> => {
                 mobile
             }
         })
+
+        if (result.count === 0) {
+            res.status(404).json({ message: 'Direccion no encontrada' })
+            return
+        }
+
+        const address = await prisma.userAddress.findUnique({ where: { id: parseInt(id as string) } })
         res.status(200).json({ message: "Direccion cambiada con exito", address })
     } catch (error: any) {
         res.status(500).json({
@@ -123,12 +131,19 @@ const updateAddress = async (req:Request, res:Response):Promise<void> => {
     }
 }
 
-const deleteAddress = async (req:Request, res:Response):Promise<void> => {
+const deleteAddress = async (req:AuthRequest, res:Response):Promise<void> => {
     try {
+        const userId = req.user!.id
         const { id } = req.params
-        await prisma.userAddress.delete({
-            where: { id: parseInt(id as string) }
+
+        const result = await prisma.userAddress.deleteMany({
+            where: { id: parseInt(id as string), userId }
         })
+
+        if (result.count === 0) {
+            res.status(404).json({ message: 'Direccion no encontrada' })
+            return
+        }
 
         res.json({ message: "La direccion fue eliminada correctamente" })
     } catch (error: any) {

@@ -130,16 +130,27 @@ model CartItem {
 }
 
 model OrderDetails {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  total     Float
-  paymentId Int      @unique
-  createdAt DateTime @default(now())
-  modifiedAt DateTime @updatedAt
+  id             Int         @id @default(autoincrement())
+  userId         Int
+  total          Float
+  paymentId      Int         @unique
+  idempotencyKey String?     @unique
+  status         OrderStatus @default(PENDIENTE)
+  createdAt      DateTime    @default(now())
+  modifiedAt     DateTime    @updatedAt
 
   user    User           @relation(fields: [userId], references: [id])
   payment PaymentDetails @relation(fields: [paymentId], references: [id])
   items   OrderItems[]
+}
+
+enum OrderStatus {
+  PENDIENTE
+  PAGADO
+  PREPARANDO
+  ENVIADO
+  ENTREGADO
+  CANCELADO
 }
 
 model OrderItems {

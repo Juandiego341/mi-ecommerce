@@ -1,12 +1,28 @@
 import { useState, useEffect } from 'react'
 import { productService } from '../services/product.service'
 import { categoryService } from '../services/category.service'
+import { orderService } from '../services/order.service'
+import { getErrorMessage } from '../utils/getErrorMessage'
+import ErrorBanner from '../components/ErrorBanner'
+import { ListRowSkeleton } from '../components/Skeleton'
+import OrderStatusStepper from '../components/OrderStatusStepper'
+
+const NEXT_STAGE = {
+  PAGADO: { status: 'PREPARANDO', label: 'Marcar como preparando' },
+  PREPARANDO: { status: 'ENVIADO', label: 'Marcar como enviado' },
+  ENVIADO: { status: 'ENTREGADO', label: 'Marcar como entregado' }
+}
+const CANCELABLE_STATUSES = ['PENDIENTE', 'PAGADO', 'PREPARANDO']
 
 const Admin = () => {
 
+  const [activeTab, setActiveTab] = useState('products')
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
+  const [orders, setOrders] = useState([])
+  const [orderActionId, setOrderActionId] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
   const [showCategoryForm, setShowCategoryForm] = useState(false)
@@ -20,23 +36,43 @@ const Admin = () => {
     categoryId: '',
     quantity: ''
   })
+  const [importFile, setImportFile] = useState(null)
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState(null)
+  const [showImport, setShowImport] = useState(false)
 
   const fetchData = async () => {
     try {
-      const [productsRes, categoriesRes] = await Promise.all([
+      const [productsRes, categoriesRes, ordersRes] = await Promise.all([
         productService.getAll(),
-        categoryService.getAll()
+        categoryService.getAll(),
+        orderService.getAllOrdersAdmin()
       ])
       setProducts(productsRes.data)
       setCategories(categoriesRes.data)
+      setOrders(ordersRes.data)
     } catch (err) {
-      console.error(err)
+      setError(getErrorMessage(err, 'No se pudieron cargar los productos'))
     } finally {
       setLoading(false)
     }
   }
 
+  const handleAdvanceOrder = async (orderId, status) => {
+    setOrderActionId(orderId)
+    setError(null)
+    try {
+      await orderService.updateFulfillment(orderId, status)
+      fetchData()
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo actualizar el estado del pedido'))
+    } finally {
+      setOrderActionId(null)
+    }
+  }
+
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData()
   }, [])
 
@@ -46,6 +82,7 @@ const Admin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError(null)
     try {
       const formDataToSend = new FormData()
       formDataToSend.append('name', formData.name)
@@ -56,11 +93,6 @@ const Admin = () => {
       formDataToSend.append('quantity', formData.quantity)
       if (imagen) {
         formDataToSend.append('imagen', imagen)
-      }
-
-      // Log para verificar
-      for (let [key, value] of formDataToSend.entries()) {
-        console.log(key, value)
       }
 
       if (editingProduct) {
@@ -75,7 +107,7 @@ const Admin = () => {
       setFormData({ name: '', desc: '', SKU: '', price: '', categoryId: '', quantity: '' })
       fetchData()
     } catch (err) {
-      console.error(err)
+      setError(getErrorMessage(err, 'No se pudo guardar el producto'))
     }
   }
 
@@ -94,11 +126,12 @@ const Admin = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('¿Estás seguro de eliminar este producto?')) return
+    setError(null)
     try {
       await productService.remove(id)
       fetchData()
     } catch (err) {
-      console.error(err)
+      setError(getErrorMessage(err, 'No se pudo eliminar el producto'))
     }
   }
 
@@ -109,29 +142,53 @@ const Admin = () => {
     setFormData({ name: '', desc: '', SKU: '', price: '', categoryId: '', quantity: '' })
   }
 
+  const handleImport = async () => {
+    if (!importFile) return
+    setImporting(true)
+    setError(null)
+    setImportResult(null)
+    try {
+      const response = await productService.importExcel(importFile)
+      setImportResult(response.data)
+      setImportFile(null)
+      fetchData()
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo importar el archivo'))
+    } finally {
+      setImporting(false)
+    }
+  }
+
   const handleCreateCategory = async () => {
+    setError(null)
     try {
       await categoryService.create(newCategory)
       setNewCategory({ name: '', desc: '' })
       setShowCategoryForm(false)
       fetchData()
     } catch (err) {
-      console.error(err)
+      setError(getErrorMessage(err, 'No se pudo crear la categoría'))
     }
   }
 
   const handleDeleteCategory = async (id) => {
+    setError(null)
     try {
       await categoryService.remove(id)
       fetchData()
     } catch (err) {
-      console.error(err)
+      setError(getErrorMessage(err, 'No se pudo eliminar la categoría'))
     }
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-      <p className="text-zinc-400">Cargando...</p>
+    <div className="min-h-screen bg-zinc-950">
+      <div className="max-w-6xl mx-auto px-4 py-10 space-y-4">
+        <h1 className="text-3xl font-bold text-white mb-8">Panel de Admin</h1>
+        <ListRowSkeleton />
+        <ListRowSkeleton />
+        <ListRowSkeleton />
+      </div>
     </div>
   )
 
@@ -140,16 +197,94 @@ const Admin = () => {
       <div className="max-w-6xl mx-auto px-4 py-10">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-white">Panel de Admin</h1>
+          {activeTab === 'products' && (
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowImport(!showImport)}
+                className="bg-zinc-800 hover:bg-zinc-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition"
+              >
+                {showImport ? 'Cancelar' : 'Importar Excel'}
+              </button>
+              <button
+                onClick={() => showForm ? handleCancel() : setShowForm(true)}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition"
+              >
+                {showForm ? 'Cancelar' : '+ Nuevo producto'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-8 border-b border-zinc-800">
           <button
-            onClick={() => showForm ? handleCancel() : setShowForm(true)}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition"
+            onClick={() => setActiveTab('products')}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition ${
+              activeTab === 'products' ? 'text-white border-indigo-500' : 'text-zinc-500 border-transparent hover:text-zinc-300'
+            }`}
           >
-            {showForm ? 'Cancelar' : '+ Nuevo producto'}
+            Productos
+          </button>
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition ${
+              activeTab === 'orders' ? 'text-white border-indigo-500' : 'text-zinc-500 border-transparent hover:text-zinc-300'
+            }`}
+          >
+            Pedidos
           </button>
         </div>
 
+        {error && <div className="mb-6"><ErrorBanner message={error} /></div>}
+
+        {/* Importar Excel */}
+        {activeTab === 'products' && showImport && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-8">
+            <h2 className="text-white font-bold text-lg mb-2">Importar productos desde Excel</h2>
+            <p className="text-zinc-400 text-sm mb-4">
+              El archivo debe ser .xlsx con las columnas: <span className="text-zinc-300">Nombre, Descripcion, SKU, Precio, Categoria, Stock</span>.
+              Si el SKU ya existe, el producto se actualiza; si no, se crea (y la categoría también se crea si no existe).
+            </p>
+            <div className="flex items-center gap-3">
+              <input
+                type="file"
+                accept=".xlsx"
+                onChange={(e) => setImportFile(e.target.files[0])}
+                className="flex-1 bg-zinc-800 border border-zinc-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition"
+              />
+              <button
+                onClick={handleImport}
+                disabled={!importFile || importing}
+                className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-lg text-sm font-medium transition"
+              >
+                {importing ? 'Importando...' : 'Importar'}
+              </button>
+            </div>
+
+            {importResult && (
+              <div className="mt-4 space-y-2">
+                <div className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm rounded-lg px-4 py-3">
+                  {importResult.created} producto{importResult.created !== 1 ? 's' : ''} creado{importResult.created !== 1 ? 's' : ''}, {importResult.updated} actualizado{importResult.updated !== 1 ? 's' : ''}
+                </div>
+                {importResult.errors.length > 0 && (
+                  <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3">
+                    <p className="font-medium mb-1">{importResult.errors.length} fila{importResult.errors.length !== 1 ? 's' : ''} con errores:</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {importResult.errors.map((e) => (
+                        <li key={e.row}>Fila {e.row}: {e.message}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'products' && (
+        <>
         {/* Formulario producto */}
         {showForm && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-8">
@@ -359,6 +494,70 @@ const Admin = () => {
             </tbody>
           </table>
         </div>
+        </>
+        )}
+
+        {/* Pedidos */}
+        {activeTab === 'orders' && (
+          <div className="space-y-4">
+            {orders.length === 0 ? (
+              <div className="text-center py-20">
+                <p className="text-zinc-400">No hay pedidos todavía</p>
+              </div>
+            ) : (
+              orders.map(order => {
+                const next = NEXT_STAGE[order.status]
+                const canCancel = CANCELABLE_STATUSES.includes(order.status)
+                return (
+                  <div key={order.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <span className="text-zinc-400 text-sm">Pedido #{order.id}</span>
+                        <p className="text-white font-bold text-xl mt-1">${order.total.toFixed(2)}</p>
+                        <p className="text-zinc-500 text-xs mt-1">{order.user?.username} · {order.user?.email}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="bg-indigo-500/10 text-indigo-400 text-xs px-3 py-1 rounded-full border border-indigo-500/30">
+                          Pago: {order.payment?.status}
+                        </span>
+                        <p className="text-zinc-500 text-xs mt-2">
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-zinc-800 pt-5 pb-2 px-2 mb-4">
+                      <OrderStatusStepper status={order.status} />
+                    </div>
+
+                    {(next || canCancel) && (
+                      <div className="flex gap-2 justify-end">
+                        {next && (
+                          <button
+                            onClick={() => handleAdvanceOrder(order.id, next.status)}
+                            disabled={orderActionId === order.id}
+                            className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 text-white text-xs px-4 py-2 rounded-lg transition"
+                          >
+                            {orderActionId === order.id ? 'Actualizando...' : next.label}
+                          </button>
+                        )}
+                        {canCancel && (
+                          <button
+                            onClick={() => handleAdvanceOrder(order.id, 'CANCELADO')}
+                            disabled={orderActionId === order.id}
+                            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs px-4 py-2 rounded-lg transition"
+                          >
+                            Cancelar pedido
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
 
       </div>
     </div>

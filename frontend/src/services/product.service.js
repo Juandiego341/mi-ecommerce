@@ -9,6 +9,13 @@ export const productService = {
     update: (id, data) => api.put(`/product/${id}`, data, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
-    remove: (id) => api.delete(`/product/${id}`)
+    remove: (id) => api.delete(`/product/${id}`),
+    importExcel: (file) => {
+        const formData = new FormData()
+        formData.append('file', file)
+        return api.post('/product/import', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        })
+    }
 };
 export default productService;

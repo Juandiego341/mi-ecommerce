@@ -1,17 +1,23 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { cartService } from '../services/cart.service'
+import { useCart } from '../context/useCart'
+import { getErrorMessage } from '../utils/getErrorMessage'
+import ErrorBanner from '../components/ErrorBanner'
+import { ListRowSkeleton } from '../components/Skeleton'
 
 const Cart = () => {
   const [cart, setCart] = useState(null)
   const [loading, setLoading] = useState(true)
-  
+  const [error, setError] = useState(null)
+  const { refreshCart } = useCart()
+
   const fetchCart = async () => {
     try {
       const response = await cartService.getCart()
       setCart(response.data)
     } catch (err) {
-      console.error(err)
+      setError(getErrorMessage(err, 'No se pudo cargar el carrito'))
     } finally {
       setLoading(false)
     }
@@ -28,8 +34,9 @@ const Cart = () => {
     try {
       await cartService.updateItem({ quantity }, itemId)
       fetchCart()
+      refreshCart()
     } catch (err) {
-      console.error(err)
+      setError(getErrorMessage(err, 'No se pudo actualizar la cantidad'))
     }
   }
 
@@ -37,18 +44,25 @@ const Cart = () => {
     try {
       await cartService.removeItem(itemId)
       fetchCart()
+      refreshCart()
     } catch (err) {
-      console.error(err)
+      setError(getErrorMessage(err, 'No se pudo eliminar el producto del carrito'))
     }
   }
 
-  const total = cart?.cartItems?.reduce((acc, item) => {
+  const cartItems = cart?.cartItems || []
+
+  const total = cartItems.reduce((acc, item) => {
     return acc + item.product.price * item.quantity
-  }, 0) || 0
+  }, 0)
 
   if (loading) return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-      <p className="text-zinc-400">Cargando carrito...</p>
+    <div className="min-h-screen bg-zinc-950">
+      <div className="max-w-4xl mx-auto px-4 py-10 space-y-4">
+        <h1 className="text-3xl font-bold text-white mb-8">Mi Carrito</h1>
+        <ListRowSkeleton />
+        <ListRowSkeleton />
+      </div>
     </div>
   )
 
@@ -57,7 +71,9 @@ const Cart = () => {
       <div className="max-w-4xl mx-auto px-4 py-10">
         <h1 className="text-3xl font-bold text-white mb-8">Mi Carrito</h1>
 
-        {!cart || cart.cartItems?.length === 0 ? (
+        {error && <div className="mb-6"><ErrorBanner message={error} /></div>}
+
+        {cartItems.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-zinc-400 mb-4">Tu carrito está vacío</p>
             <Link
@@ -72,7 +88,7 @@ const Cart = () => {
 
             {/* Items */}
             <div className="lg:col-span-2 space-y-4">
-              {cart.cartItems.map(item => (
+              {cartItems.map(item => (
                 <div
                   key={item.id}
                   className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex gap-4"

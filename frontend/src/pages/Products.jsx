@@ -4,6 +4,10 @@ import { productService } from '../services/product.service'
 import { categoryService } from '../services/category.service'
 import { cartService } from '../services/cart.service'
 import { useAuth } from '../context/useAuth'
+import { useCart } from '../context/useCart'
+import { getErrorMessage } from '../utils/getErrorMessage'
+import ErrorBanner from '../components/ErrorBanner'
+import { ProductGridSkeleton } from '../components/Skeleton'
 
 const Products = () => {
   const [products, setProducts] = useState([])
@@ -11,6 +15,7 @@ const Products = () => {
   const [loading, setLoading] = useState(true)
   const [addingId, setAddingId] = useState(null)
   const [success, setSuccess] = useState(null)
+  const [error, setError] = useState(null)
 
   // Estados de filtros
   const [search, setSearch] = useState('')
@@ -18,7 +23,12 @@ const Products = () => {
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
 
+  // Paginación
+  const [page, setPage] = useState(1)
+  const pageSize = 12
+
   const { user } = useAuth()
+  const { refreshCart } = useCart()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -31,7 +41,7 @@ const Products = () => {
         setProducts(productsRes.data)
         setCategories(categoriesRes.data)
       } catch (err) {
-        console.error(err)
+        setError(getErrorMessage(err, 'No se pudieron cargar los productos'))
       } finally {
         setLoading(false)
       }
@@ -46,11 +56,13 @@ const Products = () => {
     }
     try {
       setAddingId(productId)
+      setError(null)
       await cartService.addItem({ productId, quantity: 1 })
       setSuccess(productId)
+      refreshCart()
       setTimeout(() => setSuccess(null), 2000)
     } catch (err) {
-      console.error(err)
+      setError(getErrorMessage(err, 'No se pudo agregar el producto al carrito'))
     } finally {
       setAddingId(null)
     }
@@ -66,6 +78,14 @@ const Products = () => {
     return matchSearch && matchCategory && matchMinPrice && matchMaxPrice
   })
 
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize))
+  const paginatedProducts = filteredProducts.slice((page - 1) * pageSize, page * pageSize)
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPage(1)
+  }, [search, selectedCategory, minPrice, maxPrice])
+
   const handleClearFilters = () => {
     setSearch('')
     setSelectedCategory('')
@@ -74,8 +94,11 @@ const Products = () => {
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-      <p className="text-zinc-400">Cargando productos...</p>
+    <div className="min-h-screen bg-zinc-950">
+      <div className="max-w-6xl mx-auto px-4 py-10">
+        <h1 className="text-3xl font-bold text-white mb-8">Productos</h1>
+        <ProductGridSkeleton count={8} />
+      </div>
     </div>
   )
 
@@ -84,6 +107,8 @@ const Products = () => {
       <div className="max-w-6xl mx-auto px-4 py-10">
 
         <h1 className="text-3xl font-bold text-white mb-8">Productos</h1>
+
+        {error && <div className="mb-6"><ErrorBanner message={error} /></div>}
 
         {/* Filtros */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-8">
@@ -169,7 +194,7 @@ const Products = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map(product => (
+            {paginatedProducts.map(product => (
               <div
                 key={product.id}
                 onClick={() => navigate(`/products/${product.id}`)}
@@ -214,6 +239,29 @@ const Products = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Paginación */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-10">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm px-4 py-2 rounded-lg transition"
+            >
+              Anterior
+            </button>
+            <span className="text-zinc-400 text-sm px-2">
+              Página {page} de {totalPages}
+            </span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm px-4 py-2 rounded-lg transition"
+            >
+              Siguiente
+            </button>
           </div>
         )}
       </div>

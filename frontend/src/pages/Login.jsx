@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import { authService } from '../services/auth.service'
+import { getErrorMessage } from '../utils/getErrorMessage'
 
 const Login = () => {
   const [email, setEmail] = useState('')
@@ -11,6 +12,7 @@ const Login = () => {
 
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -20,9 +22,11 @@ const Login = () => {
       const response = await authService.login({ email, password })
       const { token, user } = response.data
       login(user, token)
-      navigate('/')
+      const redirect = searchParams.get('redirect')
+      const isSafeRedirect = redirect && redirect.startsWith('/') && !redirect.startsWith('//')
+      navigate(isSafeRedirect ? redirect : '/')
     } catch (err) {
-      setError('Email o contraseña incorrectos',err)
+      setError(getErrorMessage(err, 'Email o contraseña incorrectos'))
     } finally {
       setLoading(false)
     }
